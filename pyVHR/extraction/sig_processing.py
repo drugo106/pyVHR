@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -38,7 +39,8 @@ class SignalProcessing():
         self.font_color = (255, 0, 0, 255)
         self.visualize_skin_collection = []
         self.visualize_landmarks_collection = []
-
+        self.patches = []
+        
     def choose_cuda_device(self, n):
         """
         Choose a CUDA device.
@@ -374,7 +376,9 @@ class SignalProcessing():
                 max_num_faces=1,
                 min_detection_confidence=0.5,
                 min_tracking_confidence=0.5) as face_mesh:
+            self.ml = []
             for frame in extract_frames_yield(videoFileName):
+                
                 # convert the BGR image to RGB.
                 image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 processed_frames_count += 1
@@ -412,6 +416,13 @@ class SignalProcessing():
                 temp = sig_ext_met(magic_ldmks, full_skin_im, ldmks_regions,
                                    np.int32(SignalProcessingParams.RGB_LOW_TH), np.int32(SignalProcessingParams.RGB_HIGH_TH))
                 sig.append(temp)
+                #extract patches 
+                if region_type == "squares":
+                    sides = np.array([self.square] * len(magic_ldmks))
+                    self.patches.append(get_frame_patches(full_skin_im, np.array(magic_ldmks[:, 1]), np.array(magic_ldmks[:, 0]), sides, sides))
+                elif region_type == "rects":
+                    self.patches.append(get_frame_patches(full_skin_im, np.array(magic_ldmks[:, 1]), np.array(magic_ldmks[:, 0]), np.array(self.rects[:, 0]), np.array(self.rects[:, 1])))
+                    
                 # visualize patches and skin
                 if self.visualize_skin == True:
                     self.visualize_skin_collection.append(full_skin_im)
@@ -427,16 +438,23 @@ class SignalProcessing():
                                         (int(ldmks[idx, 1]), int(ldmks[idx, 0])), cv2.FONT_HERSHEY_SIMPLEX, self.font_size,  self.font_color,  1)
                     if self.visualize_patch == True:
                         if region_type == "squares":
-                            sides = np.array([self.square] * len(magic_ldmks))
+                            #sides = np.array([self.square] * len(magic_ldmks))
+                            #self.patches.append(get_frame_patches(image, np.array(magic_ldmks[:, 1]), np.array(magic_ldmks[:, 0]), sides, sides))
                             annotated_image = draw_rects(
                                 annotated_image, np.array(magic_ldmks[:, 1]), np.array(magic_ldmks[:, 0]), sides, sides, color)
                         elif region_type == "rects":
+                            #self.patches.append(get_frame_patches(image, np.array(magic_ldmks[:, 1]), np.array(magic_ldmks[:, 0]), np.array(self.rects[:, 0]), np.array(self.rects[:, 1])))
                             annotated_image = draw_rects(
                                 annotated_image, np.array(magic_ldmks[:, 1]), np.array(magic_ldmks[:, 0]), np.array(self.rects[:, 0]), np.array(self.rects[:, 1]), color)
                     self.visualize_landmarks_collection.append(
                         annotated_image)
+                self.ml.append(magic_ldmks)
                 ### loop break ###
                 if self.tot_frames is not None and self.tot_frames > 0 and processed_frames_count >= self.tot_frames:
                     break
         sig = np.array(sig, dtype=np.float32)
         return np.copy(sig[:, :, 2:])
+
+    
+    def get_patches():
+        return self.patches

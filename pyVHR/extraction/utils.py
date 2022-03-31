@@ -99,6 +99,17 @@ def draw_rects(image, xcenters, ycenters, xsides, ysides, color):
                 image[y, rightx, 2] = color[2]
     return image
 
+def get_frame_patches(image, xcenters, ycenters, xsides, ysides):
+    frame_patches = []
+    for idx in prange(len(xcenters)):
+        leftx = int(xcenters[idx] - xsides[idx]/2)
+        rightx = int(xcenters[idx] + xsides[idx]/2)
+        topy = int(ycenters[idx] - ysides[idx]/2)
+        bottomy = int(ycenters[idx] + ysides[idx]/2)
+        if leftx >= 0 and rightx < image.shape[1] and topy >= 0 and bottomy < image.shape[0]: 
+            frame_patches.append(image[topy:bottomy,leftx:rightx])
+    return frame_patches
+
 def sig_windowing(sig, wsize, stride, fps):
     """
     This method is used to divide a RGB signal into overlapping windows.
